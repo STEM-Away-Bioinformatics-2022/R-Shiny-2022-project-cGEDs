@@ -80,7 +80,6 @@ ui <- bs4DashPage(
                                        style= "display: inline-block;vertical-align:middle"),
                          tabName = "dataSelection",icon = icon('mouse-pointer')),
       bs4SidebarMenuItem("Apply thresholds", tabName = "applyThresholds",icon=icon('sliders-h')),
-      bs4SidebarMenuItem("Bubble Plot", tabName = "bubblePlot",icon = icon('chart-line')),
       bs4SidebarMenuItem("Scatter/Boxplot", tabName = "scatterBoxplot",icon = icon('chart-line')),
       bs4SidebarMenuItem("Tutorial", tabName = "tutorial",icon = icon('file-video')),
       bs4SidebarMenuItem("FAQs", icon = icon("question-circle"), tabName = "faq"),
@@ -288,43 +287,6 @@ ui <- bs4DashPage(
                )
             
     ), 
-            
-    bs4TabItem(tabName = "bubblePlot",
-            fluidRow(
-              column(12,
-                     div(style = "display:inline-block; float:left",
-                         actionBttn('backto_thresh', label = 'Back', 
-                                    style = "gradient",
-                                    color = "success",
-                                    size = "md",
-                                    block = FALSE,
-                                    no_outline = TRUE)),
-                     div(style = "display:inline-block; float:right",
-                         actionBttn('to_scplot', label = 'Next',
-                                    style = "gradient",
-                                    color = "success",
-                                    size = "md",
-                                    block = FALSE,
-                                    no_outline = TRUE))
-              ),
-              column(12, align="center",
-                     HTML("<h5>Bubble Plot</h5>"),
-                     hr()
-              ),
-            ),
-              
-            fluidRow(
-              column(12,align="center",
-                     actionBttn('plotBubbleplot', label = 'Plot Bubble Plot', 
-                                style = "gradient",color = "success", size = "md"),
-                     br(),
-                     br(),
-                     plotOutput("bubble",width = "auto",height = "auto"),
-                     br(),
-                     uiOutput("bubbledownload", label = "Download")
-              )
-            )
-    ),
 
     bs4TabItem(tabName = "scatterBoxplot",
           fluidRow(
@@ -487,16 +449,6 @@ server <- function(input, output,session) {
   }
   )  
   
-  # Bubble Plot page buttons
-  observeEvent(input$backto_thresh, {
-    updateTabItems(session, "tabs", "applyThresholds")
-  }
-  )
-  observeEvent(input$to_scplot, {
-    updateTabItems(session, "tabs", "scatterBoxplot")
-  }
-  ) 
-  
   # Apply thresholds & Scatter-boxplot buttons
   observeEvent(input$backto_bbplot, {
     updateTabItems(session, "tabs", "bubblePlot")
@@ -602,12 +554,7 @@ server <- function(input, output,session) {
   })
   
   # "Bubble Plot" and "Scatter/Boxplot" buttons appear when clicking on the "Apply Thresholds" button 
-  observeEvent(input$Thre, {output$to_bubblePlot<-renderUI({actionBttn("to_bubblePlot","Bubble Plot",style="gradient",color ="success")})
-  })
-  
-
   observeEvent(input$Thre, {output$to_scatterPlot<-renderUI({actionBttn("to_scatterPlot","Scatter-Boxplot",style="gradient",color ="success")})
-
   })
   
   #Apply thresholds
@@ -630,34 +577,6 @@ server <- function(input, output,session) {
         
       ) 
     }) 
-  })
-  
-  # Bubble plot
-  Bubbleplot<-reactive({
-    data <- correlations() %>%
-      rename(STARS=Corr, FDR_NUM=FDR) %>%
-      separate(STARS, into=c('CORR'), sep='\\*', remove=FALSE, extra='drop') %>%
-      mutate(CORR = as.numeric(CORR))
-    
-    bubble_df <- data %>%
-      filter(Drug %in% sigcors()$Drug) %>%
-      filter(Gene %in% sigcors()$Gene) %>%
-      select(Drug, Gene, CORR, FDR_NUM) %>%
-      mutate(FDR = ifelse(FDR_NUM <= 0.0001, '<=0.0001', 
-                          ifelse(FDR_NUM <= 0.001, '<0.001', 
-                                 ifelse(FDR_NUM <= 0.01, '<0.01', 
-                                        ifelse(FDR_NUM <= 0.05, '<0.05', '>0.05'))))) %>%
-      mutate(FDR = factor(FDR, levels=c('>0.05', '<0.05', '<0.01', '<0.001', '<=0.0001'))) %>%
-      mutate(Significant = ifelse(FDR_NUM <= 0.05, '<=0.05', '>0.05')) %>%
-      mutate(Significant = factor(Significant, levels=c('>0.05', '<=0.05'))) %>%
-      rename(Correlation=CORR)
-     
-    limit <- max(abs(bubble_df$Correlation)) * c(-1, 1)
-    ggplot(bubble_df, aes(x=Drug, y=Gene, alpha=Significant, size=FDR, colour=Correlation))+
-      geom_point()+
-      scale_colour_distiller(type = "div", palette='RdBu', limit=limit)+
-      theme_bw()+
-      theme(axis.text.x = element_text(angle = 45, hjust=1))
   })
   
   #Provide Gene/Drug pair list for the Drop-down of choosing Gene/Drug pair for the visualization
