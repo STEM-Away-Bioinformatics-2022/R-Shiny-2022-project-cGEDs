@@ -15,6 +15,8 @@ library(png)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(testthat)
+library(shinytest)
 
 plot1 <- "www/plots_combined.png"
 plot2 <- "www/home_des.png"
@@ -649,7 +651,7 @@ server <- function(input, output,session) {
       mutate(Significant = ifelse(FDR_NUM <= 0.05, '<=0.05', '>0.05')) %>%
       mutate(Significant = factor(Significant, levels=c('>0.05', '<=0.05'))) %>%
       rename(Correlation=CORR)
-    
+     
     limit <- max(abs(bubble_df$Correlation)) * c(-1, 1)
     ggplot(bubble_df, aes(x=Drug, y=Gene, alpha=Significant, size=FDR, colour=Correlation))+
       geom_point()+
